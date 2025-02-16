@@ -5,6 +5,7 @@ import subprocess
 import sys
 import textwrap
 import threading
+from concurrent.futures import ThreadPoolExecutor
 
 def execute(cmd):
     cmd = cmd.strip()
@@ -36,36 +37,41 @@ class NetCat :
                 self.socket.send(self.buffer)
         
             while True:
-                response = ''
+                response = ""
                 try:
                     data = self.socket.recv(4096)
                     if not data:
                         break
                     response += data.decode(errors="ignore")
-                    print(response, end="")
+                    sys.stdout.write(response)
+                    sys.stdout.flush()
+
                     buffer = input(">")+"\n"
                     self.socket.send(buffer.encode())
                 except Exception as e:
-                    print(f'Error: {e}')
+                    print(f'Error receiving data : {e}')
                     break
         except KeyboardInterrupt :
-            print ('User Terminated.')
+            print ("User Terminated.")
         finally:
+            print("[+] Closiing connection ...")
             self.socket.close()
 
     def listen(self) :
         self.socket.bind((self.args.target, self.args.port))
         self.socket.listen(5)
         print(f"Listening on {self.args.target}:{self.args.port}...")
-        while True :
-            try:
-                client_socket, _= self.socket.accept()
-                client_thread = threading.Thread(target=self.handle, args=(client_socket,))
-                client_thread.start()
-            except KeyboardInterrupt:
-                print("\nServer shutting down")
-                self.socket.close()
-                sys.exit()
+        
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            while True :
+                try:
+                    client_socket, _= self.socket.accept()
+                    print("[+] New connection received")
+                    executor.submit(self.handle, client_socket)
+                except KeyboardInterrupt:
+                    print("\n[+] Server shutting down!")
+                    self.socket.close()
+                    sys.exit()
 
     def handle(self, client_socket):
         try:
@@ -86,11 +92,14 @@ class NetCat :
             elif self.args.command:
                 while True :
                     try :
-                        client_socket.send(b"BHP : #> ")
+                        client_socket.send(b"BHP:#")
                         cmd_buffer = b""
                         while b"\n" not in cmd_buffer:
                             cmd_buffer += client_socket.recv(64)
-                        response = execute(cmd_buffer.decode().strip())
+                        command = cmd_buffer.decode().strip()
+                        if not command:
+                            continue
+                        response = execute(command)
                         client_socket.send(response.encode()+b"\n")
                     except Exception as e:
                         client_socket.send(f"Error : {e}\n".encode())

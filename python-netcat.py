@@ -50,6 +50,7 @@ def handle_client(client_socket):
             if command.startswith("cd "):
                 current_directory = os.getcwd()
             
+            # Hanya kirimkan hasil perintah jika berbeda dari hasil sebelumnya
             client_socket.send(result.encode())
 
         except Exception as e:

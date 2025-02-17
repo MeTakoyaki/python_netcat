@@ -5,9 +5,14 @@ import subprocess
 import sys
 import textwrap
 import threading
+import logging
 from concurrent.futures import ThreadPoolExecutor
 
+# Setup logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
 def execute(cmd):
+    """Menjalankan command shell dan mengembalikan outputnya"""
     cmd = cmd.strip()
     if not cmd:
         return "No command entered."
@@ -31,42 +36,45 @@ class NetCat :
             self.send()
 
     def send(self) :
+        """Mode Client : Menghubungkan ke server dan mengirim data"""
         try:
             self.socket.connect((self.args.target, self.args.port))
+            self.socket.settimeout(2) # set timeout agar tidak menunggu tanpa batas
             if self.buffer:
                 self.socket.send(self.buffer)
         
             while True:
-                response = ""
                 try:
-                    data = self.socket.recv(4096)
-                    if not data:
+                    response = self.socket.recv(4096)
+                    if not response:
                         break
-                    response += data.decode(errors="ignore")
-                    sys.stdout.write(response)
-                    sys.stdout.flush()
+                    print(response.decode(errors="ignore"), end="")
+                    sys.stdout.flush() # memastikan output langsung muncul
 
                     buffer = input(">")+"\n"
                     self.socket.send(buffer.encode())
+                except socket.timeout:
+                    pass # jika timeout, lanjutkan loop tanpa error
                 except Exception as e:
                     print(f'Error receiving data : {e}')
                     break
         except KeyboardInterrupt :
             print ("User Terminated.")
         finally:
-            print("[+] Closiing connection ...")
+            print("[+] Closing connection ...")
             self.socket.close()
 
     def listen(self) :
+        """Mode Server : Mendengarkan koneksi di port tertentu"""
         self.socket.bind((self.args.target, self.args.port))
         self.socket.listen(5)
-        print(f"Listening on {self.args.target}:{self.args.port}...")
+        logging.info(f"Listening on {self.args.target}:{self.args.port}...")
         
         with ThreadPoolExecutor(max_workers=10) as executor:
             while True :
                 try:
                     client_socket, _= self.socket.accept()
-                    print("[+] New connection received")
+                    print("[+] New connection received!")
                     executor.submit(self.handle, client_socket)
                 except KeyboardInterrupt:
                     print("\n[+] Server shutting down!")
@@ -74,6 +82,7 @@ class NetCat :
                     sys.exit()
 
     def handle(self, client_socket):
+        """Menangani koneksi dari klien"""
         try:
             if self.args.execute:
                 output = execute(self.args.execute)
@@ -89,25 +98,24 @@ class NetCat :
                 with open(self.args.upload, 'wb') as f:
                     f.write(file_buffer)
                 client_socket.send(f"Saved file {self.args.upload}\n".encode())
+            
             elif self.args.command:
                 while True :
                     try :
-                        client_socket.send(b"BHP:#")
-                        cmd_buffer = b""
-                        while b"\n" not in cmd_buffer:
-                            cmd_buffer += client_socket.recv(64)
-                        command = cmd_buffer.decode().strip()
-                        if not command:
-                            continue
-                        response = execute(command)
+                        client_socket.send(b"BHP:# ")
+                        cmd_buffer = client_socket.recv(4096).decode().strip()
+                        if not cmd_buffer:
+                            break
+                        response = execute(cmd_buffer)
                         client_socket.send(response.encode()+b"\n")
                     except Exception as e:
                         client_socket.send(f"Error : {e}\n".encode())
                         break
         except Exception as e :
-            print (f"Connection error : {e}")
+            logging.error(f"Connection error : {e}")
         finally:
-            self.socket.close()
+            logging.info("[+] Closing client connection.")
+            client_socket.close()
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser(

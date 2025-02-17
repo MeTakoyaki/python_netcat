@@ -3,11 +3,23 @@ import subprocess
 import threading
 import sys
 import argparse
+import os
 
 # Fungsi untuk mengeksekusi perintah yang diterima
-def execute_command(command):
+def execute_command(command, current_directory):
+    if command.startswith("cd "):
+        # Fungsi khusus untuk menangani perintah `cd`
+        try:
+            directory = command[3:].strip()
+            os.chdir(directory)  # Mengubah direktori
+            current_directory = os.getcwd()  # Mendapatkan direktori baru
+            return f"Changed directory to {current_directory}"
+        except Exception as e:
+            return f"Error changing directory: {str(e)}"
+    
+    # Perintah lainnya
     try:
-        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
+        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, cwd=current_directory)
         return output.decode()
     except subprocess.CalledProcessError as e:
         return f"Error: {e.output.decode()}"
@@ -17,10 +29,13 @@ def execute_command(command):
 # Fungsi untuk menangani setiap koneksi client
 def handle_client(client_socket):
     print("[*] Client connected.")
+    
+    current_directory = os.getcwd()  # Direktori kerja awal
 
     while True:
         try:
             # Menerima perintah dari client
+            client_socket.send(f"{current_directory} $ ".encode())  # Menampilkan prompt dengan direktori
             command = client_socket.recv(1024).decode().strip()
 
             if not command:
@@ -29,7 +44,12 @@ def handle_client(client_socket):
             print(f"[*] Executing command: {command}")
 
             # Mengeksekusi perintah dan mengirimkan hasilnya ke client
-            result = execute_command(command)
+            result = execute_command(command, current_directory)
+            
+            # Jika berhasil mengubah direktori, update direktori aktif
+            if command.startswith("cd "):
+                current_directory = os.getcwd()
+            
             client_socket.send(result.encode())
 
         except Exception as e:

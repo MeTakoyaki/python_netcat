@@ -38,8 +38,9 @@ def handle_client(client_socket):
             client_socket.send(f"{current_directory} $ ".encode())  # Menampilkan prompt dengan direktori
             command = client_socket.recv(1024).decode().strip()
 
+            # Jangan proses jika command kosong
             if not command:
-                break
+                continue
 
             print(f"[*] Executing command: {command}")
 
@@ -50,7 +51,7 @@ def handle_client(client_socket):
             if command.startswith("cd "):
                 current_directory = os.getcwd()
             
-            # Hanya kirimkan hasil perintah jika berbeda dari hasil sebelumnya
+            # Kirimkan hasil perintah
             client_socket.send(result.encode())
 
         except Exception as e:
@@ -95,7 +96,10 @@ def client_mode(host, port):
 
         # Menerima dan menampilkan hasil perintah
         result = client.recv(4096).decode()
-        print(f"[*] Output:\n{result}")
+        if result.strip():  # Pastikan hanya menampilkan hasil yang tidak kosong
+            print(f"[*] Output:\n{result}")
+        else:
+            print("[*] No output received or command was empty.")
 
     client.close()
 

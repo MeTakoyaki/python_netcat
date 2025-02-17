@@ -36,3 +36,31 @@ Untuk menjalankan aplikasi sebagai **client**, buka terminal dan jalankan perint
 ```bash
 python script.py -m client -t <IP_SERVER> -p 5555
 ```
+`-m client` : Menjalankan client mode.
+`-t` : IP dari server yang ingin dihubungi.
+`-p` : Port server yang ingin dihubungi.  
+Setelah terhubung, kamu dapat mulai mengirimkan perintah yang ingin dijalankan di server.
+
+### 3. Perintah yang Didukung
+
+`cd <direktori>` : Mengubah direktori kerja di server.
+Perintah shell lainnya seperti `ls`, `pwd`, `cat`, dll, untuk menjalankan perintah di server.
+`exit` : Menutup koneksi client ke server.
+
+### Kelebihan
+
+Mudah digunakan: Program ini menyediakan antarmuka yang sederhana dan mudah dimengerti untuk komunikasi antara client dan server.
+Dukungan perintah shell: Selain perintah dasar, dapat mengeksekusi perintah shell biasa seperti `ls`, `cat`, `pwd`, dll.
+Mendukung perubahan direktori: Pengguna dapat menggunakan perintah `cd` untuk berpindah direktori di server, menjadikannya lebih fleksibel dalam penggunaan.
+Multi-threading: Server dapat menangani beberapa koneksi client secara bersamaan menggunakan threading.
+
+### Kekurangan
+
+Keamanan terbatas: Skrip ini tidak melakukan verifikasi atau perlindungan terhadap perintah yang diterima. Penggunaan di lingkungan yang tidak aman bisa berisiko.
+Fitur terbatas: Skrip ini hanya mendukung perintah dasar dan tidak mendukung banyak fitur lain seperti autentikasi atau enkripsi.
+Tidak ada handling timeout: Koneksi client dan server tidak memiliki mekanisme timeout yang memadai jika koneksi terputus atau terlalu lama.
+Tidak ada logging: Tidak ada logging atau pencatatan aktivitas yang dilakukan pada server.
+
+### Lisensi
+
+Proyek ini dilisensikan di bawah MIT License.

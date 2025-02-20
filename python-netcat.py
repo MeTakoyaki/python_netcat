@@ -1,123 +1,113 @@
 import socket
-import subprocess
 import threading
-import sys
-import argparse
+import subprocess
 import os
 
-# Fungsi untuk mengeksekusi perintah yang diterima
-def execute_command(command, current_directory):
-    if command.startswith("cd "):
-        # Fungsi khusus untuk menangani perintah `cd`
-        try:
-            directory = command[3:].strip()
-            os.chdir(directory)  # Mengubah direktori
-            current_directory = os.getcwd()  # Mendapatkan direktori baru
-            return f"Changed directory to {current_directory}"
-        except Exception as e:
-            return f"Error changing directory: {str(e)}"
-    
-    # Perintah lainnya
-    try:
-        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, cwd=current_directory)
-        return output.decode()
-    except subprocess.CalledProcessError as e:
-        return f"Error: {e.output.decode()}"
-    except Exception as e:
-        return f"Unexpected error: {str(e)}"
+class NetCat:
+    def __init__(self, ip, port, listen=False):
+        self.ip = ip
+        self.port = port
+        self.listen = listen
+        self.current_directory = os.getcwd()
 
-# Fungsi untuk menangani setiap koneksi client
-def handle_client(client_socket):
-    print("[*] Client connected.")
-    
-    current_directory = os.getcwd()  # Direktori kerja awal
-
-    while True:
-        try:
-            # Menerima perintah dari client
-            client_socket.send(f"{current_directory} $ ".encode())  # Menampilkan prompt dengan direktori
-            command = client_socket.recv(1024).decode().strip()
-
-            # Jangan proses jika command kosong
-            if not command:
-                continue
-
-            print(f"[*] Executing command: {command}")
-
-            # Mengeksekusi perintah dan mengirimkan hasilnya ke client
-            result = execute_command(command, current_directory)
-            
-            # Jika berhasil mengubah direktori, update direktori aktif
-            if command.startswith("cd "):
-                current_directory = os.getcwd()
-            
-            # Kirimkan hasil perintah
-            client_socket.send(result.encode())
-
-        except Exception as e:
-            print(f"Error: {e}")
-            break
-
-    client_socket.close()
-
-# Fungsi untuk server mode
-def server_mode(host, port):
-    # Membuat socket server
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((host, port))
-    server.listen(5)
-    print(f"[*] Listening on {host}:{port}")
-
-    while True:
-        client_socket, addr = server.accept()
-        print(f"[*] Accepted connection from {addr[0]}:{addr[1]}")
-
-        # Menangani client dalam thread terpisah
-        client_thread = threading.Thread(target=handle_client, args=(client_socket,))
-        client_thread.start()
-
-# Fungsi untuk client mode
-def client_mode(host, port):
-    # Membuat socket client
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.connect((host, port))
-    print("[*] Connected to the server.")
-
-    while True:
-        # Mengambil input perintah dari user
-        command = input("Enter command to execute (or 'exit' to quit): ")
-
-        if command.lower() == 'exit':
-            print("[*] Exiting...")
-            break
-
-        # Mengirimkan perintah ke server
-        client.send(command.encode())
-
-        # Menerima dan menampilkan hasil perintah
-        result = client.recv(4096).decode()
-        if result.strip():  # Pastikan hanya menampilkan hasil yang tidak kosong
-            print(f"[*] Output:\n{result}")
+    def run(self):
+        if self.listen:
+            self.start_server()
         else:
-            print("[*] No output received or command was empty.")
+            self.start_client()
 
-    client.close()
+    def start_server(self):
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind((self.ip, self.port))
+        server.listen(5)
+        print(f"[*] Listening on {self.ip}:{self.port}")
 
-# Fungsi utama untuk memilih mode (server atau client)
-def main():
-    parser = argparse.ArgumentParser(description="NetCat Remote Command Executor")
-    parser.add_argument('-m', '--mode', choices=['server', 'client'], required=True, help="Mode to run: 'server' or 'client'")
-    parser.add_argument('-t', '--target', default='localhost', help="Target IP (for client) or host to listen (for server)")
-    parser.add_argument('-p', '--port', type=int, default=5555, help="Port to connect/listen on")
+        while True:
+            client_socket, addr = server.accept()
+            print(f"[*] Accepted connection from {addr[0]}:{addr[1]}")
+            client_thread = threading.Thread(target=self.handle_client, args=(client_socket,))
+            client_thread.start()
+
+    def handle_client(self, client_socket):
+        client_socket.send(f"Connected. Current directory: {self.current_directory}\n".encode())
+
+        while True:
+            try:
+                client_socket.send(f"{self.current_directory} $ ".encode())
+                command = client_socket.recv(1024).decode().strip()
+                
+                if not command:
+                    continue
+                
+                if command.lower() == "exit":
+                    client_socket.send(b"Goodbye!\n")
+                    client_socket.close()
+                    break
+                
+                if command.startswith("cd "):
+                    directory = command[3:].strip()
+                    try:
+                        os.chdir(directory)
+                        self.current_directory = os.getcwd()
+                        response = f"Changed directory to {self.current_directory}\n"
+                    except Exception as e:
+                        response = f"Error: {str(e)}\n"
+                else:
+                    response = self.execute_command(command)
+
+                client_socket.send(response.encode())
+
+            except Exception as e:
+                client_socket.send(f"Error: {str(e)}\n".encode())
+                break
+
+    def execute_command(self, command):
+        try:
+            output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, cwd=self.current_directory)
+            return output.decode()
+        except subprocess.CalledProcessError as e:
+            return f"Error: {e.output.decode()}\n"
+        except Exception as e:
+            return f"Unexpected error: {str(e)}\n"
+
+    def start_client(self):
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect((self.ip, self.port))
+        print("[*] Connected to the server.")
+
+        while True:
+            try:
+                prompt = client.recv(1024).decode()
+                command = input(prompt)
+                client.send(command.encode())
+
+                if command.lower() == "exit":
+                    print("[*] Exiting...")
+                    break
+
+                response = client.recv(4096).decode()
+                print(response, end="")
+
+            except KeyboardInterrupt:
+                print("\n[*] Exiting...")
+                client.send(b"exit")
+                break
+            except Exception as e:
+                print(f"Error: {str(e)}")
+                break
+
+        client.close()
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Python NetCat Remote Shell")
+    parser.add_argument("-t", "--target", required=True, help="Target IP address")
+    parser.add_argument("-p", "--port", type=int, required=True, help="Port number")
+    parser.add_argument("-l", "--listen", action="store_true", help="Listen mode (server)")
 
     args = parser.parse_args()
 
-    if args.mode == 'server':
-        # Menjalankan server mode
-        server_mode(args.target, args.port)
-    elif args.mode == 'client':
-        # Menjalankan client mode
-        client_mode(args.target, args.port)
-
-if __name__ == '__main__':
-    main()
+    nc = NetCat(args.target, args.port, args.listen)
+    nc.run()

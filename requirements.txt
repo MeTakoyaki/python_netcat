@@ -1,0 +1,6 @@
+argparse
+socket
+subprocess
+threading
+sys
+os

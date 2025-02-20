@@ -1,66 +1,73 @@
-# python_netcat
+# Python NetCat - Remote Command Executor
 
- adalah sebuah aplikasi sederhana yang memungkinkan eksekusi perintah jarak jauh antara client dan server menggunakan socket. Program ini mendukung perintah dasar seperti `cd` untuk mengganti direktori, serta menjalankan perintah lainnya di server yang terhubung.
+## 🚀 Fitur
+- Menjalankan perintah shell jarak jauh
+- Bisa berpindah direktori dengan perintah `cd`
+- Tidak ada duplikasi output atau baris kosong saat menekan enter
+- Mendukung banyak koneksi client dengan multi-threading
+- Mudah digunakan untuk keperluan administrasi jaringan
 
-## Fitur Utama
-
-- Eksekusi perintah jarak jauh menggunakan koneksi TCP.
-- Mendukung perintah shell seperti `ls`, `pwd`, dan lainnya.
-- Mendukung perintah `cd` untuk berpindah direktori di server.
-- Mode server dan client terpisah.
-- Menampilkan prompt yang memperlihatkan direktori kerja saat ini.
-
-## Persyaratan
-
-- Python 3.x
-- Paket Python standar (`socket`, `subprocess`, `threading`, `os`, dll)
-
-## Cara Penggunaan
-
-### 1. Menjalankan Server
-
-Untuk menjalankan aplikasi sebagai **server**, buka terminal dan jalankan perintah berikut:
-
+## 📌 Instalasi
+Pastikan Python sudah terinstal, lalu clone repository ini:
 ```bash
-python script.py -m server -t 0.0.0.0 -p 5555
+git clone https://github.com/MeTakoyaki/python-netcat.git
+cd python-netcat
 ```
-`-m server` : Menjalankan server mode.  
-`-t` : Alamat IP yang akan digunakan oleh server untuk mendengarkan koneksi (default: `0.0.0.0`, menerima koneksi dari semua IP).  
-`-p` : Port yang digunakan oleh server untuk mendengarkan koneksi (default: `5555`).  
-server akan menunggu koneksi client
 
-### 2. Menjalankan Client
-
-Untuk menjalankan aplikasi sebagai **client**, buka terminal dan jalankan perintah berikut:
-
+Install dependensi yang diperlukan:
 ```bash
-python script.py -m client -t <IP_SERVER> -p 5555
+pip install -r requirements.txt
 ```
-`-m client` : Menjalankan client mode.
-`-t` : IP dari server yang ingin dihubungi.
-`-p` : Port server yang ingin dihubungi.  
-Setelah terhubung, kamu dapat mulai mengirimkan perintah yang ingin dijalankan di server.
 
-### 3. Perintah yang Didukung
+## 🔧 Cara Penggunaan
 
-`cd <direktori>` : Mengubah direktori kerja di server.
-Perintah shell lainnya seperti `ls`, `pwd`, `cat`, dll, untuk menjalankan perintah di server.
-`exit` : Menutup koneksi client ke server.
+### **Menjalankan sebagai Server (Listener)**
+```bash
+python netcat.py -t x.x.x.x -p xxxx -l
+```
+👉 Server akan menunggu koneksi pada port 4444.
 
-### Kelebihan
+### **Menjalankan sebagai Client**
+```bash
+python netcat.py -t x.x.x.x -p xxxx
+```
+👉 Client akan terhubung ke server dan bisa menjalankan perintah shell.
 
-- Mudah digunakan: Program ini menyediakan antarmuka yang sederhana dan mudah dimengerti untuk komunikasi antara client dan server.
-- Dukungan perintah shell: Selain perintah dasar, dapat mengeksekusi perintah shell biasa seperti `ls`, `cat`, `pwd`, dll.
-- Mendukung perubahan direktori: Pengguna dapat menggunakan perintah `cd` untuk berpindah direktori di server, menjadikannya lebih fleksibel dalam penggunaan.
-- Multi-threading: Server dapat menangani beberapa koneksi client secara bersamaan menggunakan threading.
+### **Menjalankan Perintah**
+Setelah client terhubung, ketik perintah seperti:
+```bash
+ls
+pwd
+cd /home/user
+cat file.txt
+```
+Hasilnya akan dikirim kembali ke client.
 
-### Chance to Improve
+### **Keluar dari Session**
+Untuk keluar, cukup ketik:
+```bash
+exit
+```
 
-- Keamanan terbatas: Skrip ini tidak melakukan verifikasi atau perlindungan terhadap perintah yang diterima. Penggunaan di lingkungan yang tidak aman bisa berisiko.
-- Fitur terbatas: Skrip ini hanya mendukung perintah dasar dan tidak mendukung banyak fitur lain seperti autentikasi atau enkripsi.
-- Tidak ada handling timeout: Koneksi client dan server tidak memiliki mekanisme timeout yang memadai jika koneksi terputus atau terlalu lama.
-- Tidak ada logging: Tidak ada logging atau pencatatan aktivitas yang dilakukan pada server.
+## ✅ Kelebihan
+- **Mudah digunakan** dengan parameter `-l` untuk server dan tanpa `-l` untuk client
+- **Lebih cepat dan stabil** dibandingkan NetCat tradisional
+- **Bisa berpindah direktori (`cd`) tanpa masalah**
+- **Dukungan multi-threading untuk banyak koneksi client**
 
-### Lisensi
+## ❌ Kekurangan
+- Tidak mendukung koneksi terenkripsi (sebaiknya gunakan dalam jaringan yang aman)
+- Tidak memiliki autentikasi pengguna (bisa ditambahkan jika diperlukan)
 
-Proyek ini dilisensikan di bawah MIT License.
+## 📜 Lisensi
+Proyek ini menggunakan lisensi **MIT**, yang berarti Anda bebas menggunakannya dengan syarat tetap mencantumkan atribusi kepada pembuatnya.
+
+## 🤝 Kontribusi
+Pull request sangat diterima! Silakan buat issue jika ada bug atau fitur yang ingin ditambahkan.
+
+## 📞 Kontak
+Jika ada pertanyaan, hubungi saya di [botnet@inbox.com](mailto:email@example.com).
+
+---
+✨ **Happy Hacking!** ✨
+

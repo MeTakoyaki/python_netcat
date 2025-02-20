@@ -66,7 +66,7 @@ Proyek ini menggunakan lisensi **MIT**, yang berarti Anda bebas menggunakannya d
 Pull request sangat diterima! Silakan buat issue jika ada bug atau fitur yang ingin ditambahkan.
 
 ## 📞 Kontak
-Jika ada pertanyaan, hubungi saya di [botnet@inbox.com](mailto:email@example.com).
+Jika ada pertanyaan, hubungi saya di [botnet.inbox@gmail.com](mailto:botnet.inbox@gmail.com).
 
 ---
 ✨ **Happy Hacking!** ✨

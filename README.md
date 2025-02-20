@@ -25,7 +25,7 @@ pip install -r requirements.txt
 ```bash
 python netcat.py -t x.x.x.x -p xxxx -l
 ```
-👉 Server akan menunggu koneksi pada port 4444.
+👉 Server akan menunggu koneksi pada ip x.x.x.x port xxxx.
 
 ### **Menjalankan sebagai Client**
 ```bash
